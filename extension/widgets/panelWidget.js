@@ -188,7 +188,10 @@ class PanelWidget extends PanelMenu.Button {
 
 		let ongoingFact = getOngoingFact(facts);
 
-		this.updatePanelDisplay(ongoingFact);
+        let today_duration = 0;
+        facts.forEach(fact => today_duration += fact.delta)
+
+		this.updatePanelDisplay(ongoingFact, today_duration);
 		this.factsBox.refresh(facts, ongoingFact);
 	}
 
@@ -221,19 +224,20 @@ class PanelWidget extends PanelMenu.Button {
      * Depending on the 'display mode' set in the extensions settings this has
      * slightly different consequences.
      */
-    updatePanelDisplay(fact) {
+    updatePanelDisplay(fact, todayDuration) {
         /**
          * Return a text string representing the passed fact suitable for the panelLabel.
          *
          * @param fact The fact to be represented. Be advised. If there is no
          * *ongoing fact* this will be ``null``!
+         * @param todayDuration
          */
         function getLabelString(fact) {
             let result = _("No activity");
             if (fact) {
                 result = "%s %s".format(fact.name, Stuff.formatDuration(fact.delta));
             }
-            return result;
+            return result + "/" + Stuff.formatDuration(todayDuration);
         }
         /**
          * Returns the appropriate icon image depending on ``fact``.

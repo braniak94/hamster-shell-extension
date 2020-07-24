@@ -36,51 +36,70 @@ const PanelWidget = Me.imports.widgets.panelWidget.PanelWidget;
 
 // dbus-send --session --type=method_call --print-reply --dest=org.gnome.Hamster /org/gnome/Hamster org.freedesktop.DBus.Introspectable.Introspect
 const ApiProxyIface = ['',
-  '<node>',
-  '  <interface name="org.gnome.Hamster">',
-  '    <method name="GetTodaysFacts">',
-  '      <arg direction="out" type="a(iiissisasii)" />',
-  '    </method>',
-  '    <method name="StopTracking">',
-  '      <arg direction="in"  type="v" name="end_time" />',
-  '    </method>',
-  '    <method name="AddFact">',
-  '      <arg direction="in"  type="s" name="fact" />',
-  '      <arg direction="in"  type="i" name="start_time" />',
-  '      <arg direction="in"  type="i" name="end_time" />',
-  '      <arg direction="in"  type="b" name="temporary" />',
-  '      <arg direction="out" type="i" />',
-  '    </method>',
-  '    <method name="GetActivities">',
-  '      <arg direction="in"  type="s" name="search" />',
-  '      <arg direction="out" type="a(ss)" />',
-  '    </method>',
-  '    <signal name="FactsChanged"></signal>',
-  '    <signal name="ActivitiesChanged"></signal>',
-  '    <signal name="TagsChanged"></signal>',
-  '  </interface>',
-  '</node>',
+    '<node>',
+    '  <interface name="org.gnome.Hamster">',
+    '    <method name="GetTodaysFacts">',
+    '      <arg direction="out" type="a(iiissisasiib)" />',
+    '    </method>',
+    // '    <method name=GetTodaysFactsJSON>',
+    // '       <arg direction="out" type="a(ss)" />',
+    // '    </method>',
+    '    <method name="StopTracking">',
+    '      <arg direction="in"  type="v" name="end_time" />',
+    '    </method>',
+    '    <method name="AddFact">',
+    '      <arg direction="in"  type="s" name="fact" />',
+    '      <arg direction="in"  type="i" name="start_time" />',
+    '      <arg direction="in"  type="i" name="end_time" />',
+    '      <arg direction="in"  type="b" name="temporary" />',
+    '      <arg direction="out" type="i" />',
+    '    </method>',
+    '   <method name="GetFacts">',
+    '       <arg direction="in"  type="u" name="start_date" />',
+    '       <arg direction="in"  type="u" name="end_date" />',
+    '       <arg direction="in"  type="s" name="search_terms" />',
+    '       <arg direction="out" type="a(iiissisasiib)" />',
+    '   </method> ',
+    '   <method name="GetFactsLimited">',
+    '       <arg direction="in"  type="u" name="start_date" />',
+    '       <arg direction="in"  type="u" name="end_date" />',
+    '       <arg direction="in"  type="s" name="search_terms" />',
+    '       <arg direction="in"  type="u" name="limit" />',
+    '       <arg direction="in"  type="b" name="asc_by_date" />',
+    '       <arg direction="out" type="a(iiissisasiib)" />',
+    '   </method>',
+    '    <method name="GetActivities">',
+    '      <arg direction="in"  type="s" name="search" />',
+    '      <arg direction="out" type="a(ss)" />',
+    '    </method>',
+    '   <method name="GetExtActivities">',
+    '       <arg direction="in"  type="s" name="search" />',
+    '       <arg direction="out" type="a(ss)" />',
+    '   </method> ',
+    '    <signal name="FactsChanged"></signal>',
+    '    <signal name="ActivitiesChanged"></signal>',
+    '    <signal name="TagsChanged"></signal>',
+    '  </interface>',
+    '</node>',
 ].join('');
 
 let ApiProxy = Gio.DBusProxy.makeProxyWrapper(ApiProxyIface);
 
 // dbus-send --session --type=method_call --print-reply --dest=org.gnome.Hamster.WindowServer /org/gnome/Hamster/WindowServer org.freedesktop.DBus.Introspectable.Introspect
 const WindowsProxyIface = ['',
-  '<node>',
-  '  <interface name="org.gnome.Hamster.WindowServer">',
-  '    <method name="edit">',
-  '      <arg direction="in"  type="v" name="id" />',
-  '    </method>',
-  '    <method name="overview"></method>',
-  '    <method name="preferences"></method>',
-  '  </interface>',
-  '</node>',
+    '<node>',
+    '  <interface name="org.gnome.Hamster.WindowServer">',
+    '    <method name="edit">',
+    '      <arg direction="in"  type="v" name="id" />',
+    '    </method>',
+    '    <method name="overview"></method>',
+    '    <method name="preferences"></method>',
+    '  </interface>',
+    '</node>',
 ].join('');
 
 
 let WindowsProxy = Gio.DBusProxy.makeProxyWrapper(WindowsProxyIface);
-
-
 
 
 /**
@@ -94,7 +113,7 @@ let WindowsProxy = Gio.DBusProxy.makeProxyWrapper(WindowsProxyIface);
  */
 class Controller {
     constructor(extensionMeta) {
-	let dateMenu = Main.panel.statusArea.dateMenu;
+        let dateMenu = Main.panel.statusArea.dateMenu;
 
         this.extensionMeta = extensionMeta;
         this.panelWidget = null;
@@ -120,16 +139,16 @@ class Controller {
     enable() {
         this.shouldEnable = true;
         new ApiProxy(Gio.DBus.session, 'org.gnome.Hamster', '/org/gnome/Hamster',
-                     function(proxy) {
-			 this.apiProxy = proxy;
-			 this.deferred_enable();
-                     }.bind(this));
+            function (proxy) {
+                this.apiProxy = proxy;
+                this.deferred_enable();
+            }.bind(this));
         new WindowsProxy(Gio.DBus.session, "org.gnome.Hamster.WindowServer",
-			 "/org/gnome/Hamster/WindowServer",
-			 function(proxy) {
-			     this.windowsProxy = proxy;
-			     this.deferred_enable();
-			 }.bind(this));
+            "/org/gnome/Hamster/WindowServer",
+            function (proxy) {
+                this.windowsProxy = proxy;
+                this.deferred_enable();
+            }.bind(this));
     }
 
     deferred_enable() {
@@ -149,7 +168,7 @@ class Controller {
         }
 
         function apiProxy_vanished_callback() {
-	    /* jshint validthis: true */
+            /* jshint validthis: true */
             global.log(_("hamster-shell-extension: 'hamster-service' not running. Shutting down."));
             Main.notify(_("hamster-shell-extension: 'hamster-service' not running. Shutting down."));
             this.disable();
@@ -159,7 +178,7 @@ class Controller {
         }
 
         function windowsProxy_vanished_callback() {
-	    /* jshint validthis: true */
+            /* jshint validthis: true */
             global.log(_("hamster-shell-extension: 'hamster-windows-service' not running. Shutting down."));
             Main.notify(_("hamster-shell-extension: 'hamster-windows-service' not running. Shutting down."));
             this.disable();
@@ -167,24 +186,24 @@ class Controller {
 
         // Set-up watchers that watch for required dbus services.
         let dbus_watcher = Gio.bus_watch_name(Gio.BusType.SESSION, 'org.gnome.Hamster',
-					      Gio.BusNameWatcherFlags.NONE, apiProxy_appeared_callback.bind(this),
-					      apiProxy_vanished_callback.bind(this));
+            Gio.BusNameWatcherFlags.NONE, apiProxy_appeared_callback.bind(this),
+            apiProxy_vanished_callback.bind(this));
 
         let dbus_watcher_window = Gio.bus_watch_name(Gio.BusType.SESSION, 'org.gnome.Hamster.WindowServer',
-						     Gio.BusNameWatcherFlags.NONE, windowsProxy_appeared_callback.bind(this),
-						     windowsProxy_vanished_callback.bind(this));
+            Gio.BusNameWatcherFlags.NONE, windowsProxy_appeared_callback.bind(this),
+            windowsProxy_vanished_callback.bind(this));
 
         this.apiProxy.connectSignal('ActivitiesChanged', this.refreshActivities.bind(this));
         this.refreshActivities();
 
         Main.panel.menuManager.addMenu(this.panelWidget.menu);
         Main.wm.addKeybinding("show-hamster-dropdown",
-			      this.panelWidget._settings,
-			      Meta.KeyBindingFlags.NONE,
-			      // Since Gnome 3.16, Shell.KeyBindingMode is replaced by Shell.ActionMode
-			      Shell.KeyBindingMode ? Shell.KeyBindingMode.ALL : Shell.ActionMode.ALL,
-			      this.panelWidget.toggle.bind(this.panelWidget)
-			     );
+            this.panelWidget._settings,
+            Meta.KeyBindingFlags.NONE,
+            // Since Gnome 3.16, Shell.KeyBindingMode is replaced by Shell.ActionMode
+            Shell.KeyBindingMode ? Shell.KeyBindingMode.ALL : Shell.ActionMode.ALL,
+            this.panelWidget.toggle.bind(this.panelWidget)
+        );
     }
 
     disable() {
@@ -205,11 +224,11 @@ class Controller {
      */
     refreshActivities() {
         if (this.runningActivitiesQuery) {
-            return(this.activities);
+            return (this.activities);
         }
 
         this.runningActivitiesQuery = true;
-        this.apiProxy.GetActivitiesRemote("", function([response], err) {
+        this.apiProxy.GetActivitiesRemote("", function ([response], err) {
             this.runningActivitiesQuery = false;
             this.activities = response;
             // global.log('ACTIVITIES HAMSTER: ', this.activities);
